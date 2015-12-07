@@ -1,9 +1,8 @@
 package processors;
 
-import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
 import java.util.Set;
 
-import jdk.nashorn.internal.runtime.regexp.JoniRegExp.Factory;
 import spoon.processing.AbstractProcessor;
 import spoon.reflect.code.CtBlock;
 import spoon.reflect.code.CtCodeSnippetStatement;
@@ -12,15 +11,19 @@ import spoon.reflect.declaration.CtClass;
 import spoon.reflect.declaration.CtMethod;
 import spoon.reflect.declaration.CtPackage;
 import spoon.reflect.declaration.ModifierKind;
-import spoon.reflect.factory.AnnotationFactory;
-import spoon.reflect.reference.CtTypeReference;
 import spoon.support.reflect.declaration.CtAnnotationImpl;
-import spoon.support.reflect.reference.CtTypeReferenceImpl;
 
 public class TestSkeletonGeneratorProcessor extends AbstractProcessor<CtClass<?>> {
 
 	public void process(CtClass<?> c) {
 		if(c.isTopLevel() && !c.hasModifier(ModifierKind.ABSTRACT)){
+			Class classe = null;
+		      try {
+		          classe = Class.forName(c.getParent()+"."+c.getSimpleName());
+		       }
+		       catch(Exception e) {
+		          System.out.println("Impossible d'instancier la classe "+c.getParent()+"."+c.getSimpleName());
+		       }
 			CtPackage p = 	getFactory().Core().createPackage();
 			p.setSimpleName("test");
 			CtClass<?> newClass = getFactory().Class().create(getFactory().Package().create(p, c.getPackage().getSimpleName()) ,c.getSimpleName()+"Test");
@@ -45,7 +48,25 @@ public class TestSkeletonGeneratorProcessor extends AbstractProcessor<CtClass<?>
 					
 					newClass.addMethod(newMethod);
 					
-					
+					if(classe != null){
+						 try {
+							 classe.getMethods();
+							 
+							 Class tab[] = new Class[m.getParameters().size()];
+							 for(int i=0;i<tab.length;i++){
+								 tab[i] = m.getParameters().get(i).getType().getActualClass();
+							 }
+							Method methode= classe.getMethod(m.getSimpleName(), tab);
+							System.out.println(methode.getReturnType()+" "+methode.getName());
+						} catch (NoSuchMethodException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						} catch (SecurityException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+						
+					}
 				}
 			}
 		}
