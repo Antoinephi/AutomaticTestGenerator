@@ -20,7 +20,7 @@ public class TestSkeletonGeneratorProcessor extends AbstractProcessor<CtClass<?>
 
 	public void process(CtClass<?> c) {
 		if(c.isTopLevel() && !c.hasModifier(ModifierKind.ABSTRACT) && c.hasModifier(ModifierKind.PUBLIC)){
-			Class classe = null;
+			Class<?> classe = null;
 		      try {
 		          classe = Class.forName(c.getParent()+"."+c.getSimpleName());
 		       }
@@ -57,14 +57,14 @@ public class TestSkeletonGeneratorProcessor extends AbstractProcessor<CtClass<?>
 		}
 	}
 
-	private void generateMethodResult(Class classe, CtMethod<?> m) {
+	private void generateMethodResult(Class<?> classe, CtMethod<?> m) {
 		if(classe != null){
 			 try {							 
-				 Class tab[] = new Class[m.getParameters().size()];
+				 Class<?> tab[] = new Class[m.getParameters().size()];
 				 for(int i=0;i<tab.length;i++){
 					 tab[i] = m.getParameters().get(i).getType().getActualClass();
 				 }
-				Method methode= classe.getMethod(m.getSimpleName(), tab);
+				Method methode = classe.getMethod(m.getSimpleName(), tab);
 				if(tab.length == 0 && hasConstructorWithoutParameter(classe)){
 					System.out.println(methode.getName());
 					Object retour = methode.invoke(classe.newInstance(), (Object[])null);
@@ -92,9 +92,9 @@ public class TestSkeletonGeneratorProcessor extends AbstractProcessor<CtClass<?>
 		}
 	}
 
-	private boolean hasConstructorWithoutParameter(Class classe) {
+	private boolean hasConstructorWithoutParameter(Class<?> classe) {
 		try {
-			Constructor constructeur =  classe.getConstructor(new Class[0]);
+			Constructor<?> constructeur =  classe.getConstructor(new Class[0]);
 			if(constructeur.toGenericString().startsWith("public")){
 				return true;
 			}
