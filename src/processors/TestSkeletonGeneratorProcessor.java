@@ -23,7 +23,7 @@ public class TestSkeletonGeneratorProcessor extends AbstractProcessor<CtClass<?>
 
 	public void process(CtClass<?> c) {
 		if(c.isTopLevel() && !c.hasModifier(ModifierKind.ABSTRACT) && c.hasModifier(ModifierKind.PUBLIC)){
-			Class classe = null;
+			Class<?> classe = null;
 		      try {
 		          classe = Class.forName(c.getParent()+"."+c.getSimpleName());
 		       }
@@ -66,18 +66,18 @@ public class TestSkeletonGeneratorProcessor extends AbstractProcessor<CtClass<?>
 		}
 	}
 
-	private List<CtCodeSnippetStatement> generateMethodResult(Class classe, CtMethod<?> m) {
+	private List<CtCodeSnippetStatement> generateMethodResult(Class<?> classe, CtMethod<?> m) {
 		List<CtCodeSnippetStatement> listeInstruction = new ArrayList<>();
 		listeInstruction.add(getFactory().Code().createCodeSnippetStatement("junit.framework.Assert.fail()"));
 
 		if(classe != null){
 			Integer valeur = 1;
 			 try {							 
-				 Class tab[] = new Class[m.getParameters().size()];
+				 Class<?> tab[] = new Class[m.getParameters().size()];
 				 for(int i=0;i<tab.length;i++){
 					 tab[i] = m.getParameters().get(i).getType().getActualClass();
 				 }
-				Method methode= classe.getMethod(m.getSimpleName(), tab);
+				Method methode = classe.getMethod(m.getSimpleName(), tab);
 				if(tab.length == 0 && hasConstructorWithoutParameter(classe)){
 					String nameObjet = classe.getSimpleName()+valeur++;
 					listeInstruction.add(getFactory().Code().createCodeSnippetStatement(classe.getCanonicalName()+" "+nameObjet+" = new "+classe.getCanonicalName()+"()"));
@@ -109,9 +109,9 @@ public class TestSkeletonGeneratorProcessor extends AbstractProcessor<CtClass<?>
 		return listeInstruction;
 	}
 
-	private boolean hasConstructorWithoutParameter(Class classe) {
+	private boolean hasConstructorWithoutParameter(Class<?> classe) {
 		try {
-			Constructor constructeur =  classe.getConstructor(new Class[0]);
+			Constructor<?> constructeur =  classe.getConstructor(new Class[0]);
 			if(constructeur.toGenericString().startsWith("public")){
 				return true;
 			}
