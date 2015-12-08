@@ -37,11 +37,10 @@ public class TestSkeletonGeneratorProcessor extends AbstractProcessor<CtClass<?>
 			for(CtMethod<?> m : methodsList){
 				if(m.hasModifier(ModifierKind.PUBLIC) && m.getParent().equals(c)){
 					CtMethod<Void> newMethod = newClass.getFactory().Core().createMethod();
-					newMethod.setType(getFactory().Type().VOID);
+					newMethod.setType(getFactory().Type().VOID_PRIMITIVE);
 					
 					newMethod.setSimpleName("test" + m.getSimpleName());
 					newMethod.setVisibility(m.getVisibility());
-					newMethod.setParameters(m.getParameters());
 					
 
 					
@@ -80,9 +79,10 @@ public class TestSkeletonGeneratorProcessor extends AbstractProcessor<CtClass<?>
 				 }
 				Method methode= classe.getMethod(m.getSimpleName(), tab);
 				if(tab.length == 0 && hasConstructorWithoutParameter(classe)){
-					
-					listeInstruction.add(getFactory().Code().createCodeSnippetStatement(classe.getCanonicalName()+" "+classe.getSimpleName()+(valeur++)+" = new "+classe.getCanonicalName()+"()"));
+					String nameObjet = classe.getSimpleName()+valeur++;
+					listeInstruction.add(getFactory().Code().createCodeSnippetStatement(classe.getCanonicalName()+" "+nameObjet+" = new "+classe.getCanonicalName()+"()"));
 					Object retour = methode.invoke(classe.newInstance(), (Object[])null);
+					listeInstruction.add(getFactory().Code().createCodeSnippetStatement("junit.framework.Assert.assertEquals("+retour.toString()+","+nameObjet+"."+m.getSimpleName()+"())"));
 				}
 			} catch (NoSuchMethodException e) {
 				// TODO Auto-generated catch block
