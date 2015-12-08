@@ -1,6 +1,9 @@
 package processors;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.Set;
 
 import spoon.processing.AbstractProcessor;
@@ -16,7 +19,7 @@ import spoon.support.reflect.declaration.CtAnnotationImpl;
 public class TestSkeletonGeneratorProcessor extends AbstractProcessor<CtClass<?>> {
 
 	public void process(CtClass<?> c) {
-		if(c.isTopLevel() && !c.hasModifier(ModifierKind.ABSTRACT)){
+		if(c.isTopLevel() && !c.hasModifier(ModifierKind.ABSTRACT) && c.hasModifier(ModifierKind.PUBLIC)){
 			Class classe = null;
 		      try {
 		          classe = Class.forName(c.getParent()+"."+c.getSimpleName());
@@ -48,30 +51,63 @@ public class TestSkeletonGeneratorProcessor extends AbstractProcessor<CtClass<?>
 					
 					newClass.addMethod(newMethod);
 					
-					if(classe != null){
-						 try {
-							 classe.getMethods();
-							 
-							 Class tab[] = new Class[m.getParameters().size()];
-							 for(int i=0;i<tab.length;i++){
-								 tab[i] = m.getParameters().get(i).getType().getActualClass();
-							 }
-							Method methode= classe.getMethod(m.getSimpleName(), tab);
-							System.out.println(methode.getReturnType()+" "+methode.getName());
-						} catch (NoSuchMethodException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						} catch (SecurityException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-						
-					}
+					generateMethodResult(classe, m);
 				}
 			}
 		}
 	}
 
+	private void generateMethodResult(Class classe, CtMethod<?> m) {
+		if(classe != null){
+			 try {							 
+				 Class tab[] = new Class[m.getParameters().size()];
+				 for(int i=0;i<tab.length;i++){
+					 tab[i] = m.getParameters().get(i).getType().getActualClass();
+				 }
+				Method methode= classe.getMethod(m.getSimpleName(), tab);
+				if(tab.length == 0 && hasConstructorWithoutParameter(classe)){
+					System.out.println(methode.getName());
+					Object retour = methode.invoke(classe.newInstance(), (Object[])null);
+				}
+			} catch (NoSuchMethodException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (SecurityException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IllegalAccessException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IllegalArgumentException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (InvocationTargetException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (InstantiationException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+		}
+	}
+
+	private boolean hasConstructorWithoutParameter(Class classe) {
+		try {
+			Constructor constructeur =  classe.getConstructor(new Class[0]);
+			if(constructeur.toGenericString().startsWith("public")){
+				return true;
+			}
+		} catch (NoSuchMethodException e) {
+			return false;
+		} catch (SecurityException e) {
+			return false;
+		}
+		
+		return false;
+	}
+
+    
 	public void processingDone(){
 		System.out.println("Done !");
 	}
