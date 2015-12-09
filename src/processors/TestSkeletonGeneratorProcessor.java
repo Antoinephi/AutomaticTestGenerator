@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import org.joda.time.DateTimeUtils;
+
 import filter.IntegerMethodFilter;
 import spoon.processing.AbstractProcessor;
 import spoon.reflect.code.CtBlock;
@@ -22,6 +24,9 @@ import spoon.support.reflect.declaration.CtAnnotationImpl;
 public class TestSkeletonGeneratorProcessor extends AbstractProcessor<CtClass<?>> {
 
 	public void process(CtClass<?> c) {
+		
+		DateTimeUtils.setCurrentMillisFixed(1449669010386l);
+		
 		if(c.isTopLevel() && !c.hasModifier(ModifierKind.ABSTRACT) && c.hasModifier(ModifierKind.PUBLIC)){
 			Class<?> classe = null;
 		      try {
@@ -33,6 +38,22 @@ public class TestSkeletonGeneratorProcessor extends AbstractProcessor<CtClass<?>
 			CtPackage p = 	getFactory().Core().createPackage();
 			p.setSimpleName("test");
 			CtClass<?> newClass = getFactory().Class().create(getFactory().Package().create(p, c.getPackage().getSimpleName()) ,c.getSimpleName()+"Test");
+			newClass.addModifier(ModifierKind.PUBLIC);
+			CtMethod<Void> newMethodBefore = newClass.getFactory().Core().createMethod();
+			newMethodBefore.setType(getFactory().Type().VOID_PRIMITIVE);
+			newMethodBefore.setSimpleName("setupMethod");
+			
+			CtAnnotation<?> annotationSetup = new CtAnnotationImpl<>();					
+			annotationSetup.setAnnotationType(getFactory().Annotation().createReference(org.junit.BeforeClass.class));
+			newMethodBefore.addAnnotation(annotationSetup);
+			
+			CtCodeSnippetStatement codeSetup =  getFactory().Code().createCodeSnippetStatement("org.joda.time.DateTimeUtils.setCurrentMillisFixed(1449669010386l)");
+			final CtBlock blockSetup = getFactory().Code().createCtBlock(codeSetup);
+			newMethodBefore.setBody(blockSetup);
+			newMethodBefore.addModifier(ModifierKind.STATIC);
+			newMethodBefore.addModifier(ModifierKind.PUBLIC);
+			newClass.addMethod(newMethodBefore);
+
 			List<CtMethod<?>> methodsList =  Query.getElements( c, new IntegerMethodFilter());
 			for(CtMethod<?> m : methodsList){
 				if(m.hasModifier(ModifierKind.PUBLIC) && m.getParent().equals(c)){
@@ -80,6 +101,7 @@ public class TestSkeletonGeneratorProcessor extends AbstractProcessor<CtClass<?>
 				Method methode = classe.getMethod(m.getSimpleName(), tab);
 				if(tab.length == 0 && hasConstructorWithoutParameter(classe)){
 					String nameObjet = classe.getSimpleName()+valeur++;
+					listeInstruction.remove(0);
 					listeInstruction.add(getFactory().Code().createCodeSnippetStatement(classe.getCanonicalName()+" "+nameObjet+" = new "+classe.getCanonicalName()+"()"));
 					Object retour = methode.invoke(classe.newInstance(), (Object[])null);
 					listeInstruction.add(getFactory().Code().createCodeSnippetStatement("junit.framework.Assert.assertEquals("+retour.toString()+","+nameObjet+"."+m.getSimpleName()+"())"));
