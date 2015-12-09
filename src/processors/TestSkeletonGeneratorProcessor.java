@@ -10,6 +10,7 @@ import java.util.Set;
 import org.joda.time.DateTimeUtils;
 
 import filter.IntegerMethodFilter;
+import parameters.IntValues;
 import spoon.processing.AbstractProcessor;
 import spoon.reflect.code.CtBlock;
 import spoon.reflect.code.CtCodeSnippetStatement;
@@ -133,12 +134,51 @@ public class TestSkeletonGeneratorProcessor extends AbstractProcessor<CtClass<?>
 	private void integerManager(Class<?> classe, CtMethod<?> m, List<CtCodeSnippetStatement> listeInstruction,
 			Integer valeur, Class<?>[] tab, Method methode)
 					throws IllegalAccessException, InvocationTargetException, InstantiationException {
-		if(tab.length == 0 && hasConstructorWithoutParameter(classe)){
+		if(hasConstructorWithoutParameter(classe)){
 			String nameObjet = classe.getSimpleName()+valeur++;
-			listeInstruction.remove(0);
 			listeInstruction.add(getFactory().Code().createCodeSnippetStatement(classe.getCanonicalName()+" "+nameObjet+" = new "+classe.getCanonicalName()+"()"));
-			Object retour = methode.invoke(classe.newInstance(), (Object[])null);
-			listeInstruction.add(getFactory().Code().createCodeSnippetStatement("junit.framework.Assert.assertEquals("+retour.toString()+","+nameObjet+"."+m.getSimpleName()+"())"));
+			Object retour = executeMethod(classe, methode, tab);
+			if(retour != null){
+				listeInstruction.remove(0);
+				listeInstruction.add(getFactory().Code().createCodeSnippetStatement("junit.framework.Assert.assertEquals("+retour.toString()+","+nameObjet+"."+m.getSimpleName()+"())"));
+			}
+		}
+	}
+
+	private Object executeMethod(Class<?> classe, Method methode, Class<?>[] tabParameter) {
+		try{
+			if(tabParameter.length == 0){
+				return methode.invoke(classe.newInstance(), (Object[])null);
+			}else{
+				Object tab[] = new Object[tabParameter.length];
+				
+				for(int i=0;i<tabParameter.length;i++){
+					Class parametre = tabParameter[i];
+					if(!parametre.isPrimitive()){
+						tab[i] = null;
+					}else{
+						switch (parametre.getName()) {
+						case "int":
+							Integer parametre1 = new Integer(IntValues.ZERO.toString());
+							tab[i] = parametre1;
+							//TODO gérer le paramètre côté génération
+							break;
+
+						default:
+							System.out.println(parametre.getName());
+							tab[i] = null;
+							//TODO tenter d'instancier quand même
+						}
+
+					}
+					
+				}
+				
+				return methode.invoke(classe.newInstance(), tab);
+			}
+		}catch(Exception e){
+			e.printStackTrace();
+			return null;
 		}
 	}
 
