@@ -99,13 +99,12 @@ public class TestSkeletonGeneratorProcessor extends AbstractProcessor<CtClass<?>
 					 tab[i] = m.getParameters().get(i).getType().getActualClass();
 				 }
 				Method methode = classe.getMethod(m.getSimpleName(), tab);
-				if(tab.length == 0 && hasConstructorWithoutParameter(classe)){
-					String nameObjet = classe.getSimpleName()+valeur++;
-					listeInstruction.remove(0);
-					listeInstruction.add(getFactory().Code().createCodeSnippetStatement(classe.getCanonicalName()+" "+nameObjet+" = new "+classe.getCanonicalName()+"()"));
-					Object retour = methode.invoke(classe.newInstance(), (Object[])null);
-					listeInstruction.add(getFactory().Code().createCodeSnippetStatement("junit.framework.Assert.assertEquals("+retour.toString()+","+nameObjet+"."+m.getSimpleName()+"())"));
+				if(m.getType().getActualClass().equals(Integer.class) || m.getType().getActualClass().equals(int.class)){
+					integerManager(classe, m, listeInstruction, valeur, tab, methode);
+				}else if(m.getType().getActualClass().equals(java.lang.String.class)){
+					//TODO stringManager
 				}
+
 			} catch (NoSuchMethodException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -129,6 +128,18 @@ public class TestSkeletonGeneratorProcessor extends AbstractProcessor<CtClass<?>
 		}
 		
 		return listeInstruction;
+	}
+
+	private void integerManager(Class<?> classe, CtMethod<?> m, List<CtCodeSnippetStatement> listeInstruction,
+			Integer valeur, Class<?>[] tab, Method methode)
+					throws IllegalAccessException, InvocationTargetException, InstantiationException {
+		if(tab.length == 0 && hasConstructorWithoutParameter(classe)){
+			String nameObjet = classe.getSimpleName()+valeur++;
+			listeInstruction.remove(0);
+			listeInstruction.add(getFactory().Code().createCodeSnippetStatement(classe.getCanonicalName()+" "+nameObjet+" = new "+classe.getCanonicalName()+"()"));
+			Object retour = methode.invoke(classe.newInstance(), (Object[])null);
+			listeInstruction.add(getFactory().Code().createCodeSnippetStatement("junit.framework.Assert.assertEquals("+retour.toString()+","+nameObjet+"."+m.getSimpleName()+"())"));
+		}
 	}
 
 	private boolean hasConstructorWithoutParameter(Class<?> classe) {
