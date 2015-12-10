@@ -10,6 +10,7 @@ import java.util.Set;
 import org.joda.time.DateTimeUtils;
 
 import filter.IntegerMethodFilter;
+import parameters.BooleanValues;
 import parameters.IntValues;
 import spoon.processing.AbstractProcessor;
 import spoon.reflect.code.CtBlock;
@@ -28,7 +29,7 @@ public class TestSkeletonGeneratorProcessor extends AbstractProcessor<CtClass<?>
 		
 		DateTimeUtils.setCurrentMillisFixed(1449669010386l);
 		
-		if(c.isTopLevel() && !c.hasModifier(ModifierKind.ABSTRACT) && c.hasModifier(ModifierKind.PUBLIC)){
+		if(!(c.getSimpleName().startsWith("Test")) && c.isTopLevel() && !c.hasModifier(ModifierKind.ABSTRACT) && c.hasModifier(ModifierKind.PUBLIC)){
 			Class<?> classe = null;
 		      try {
 		          classe = Class.forName(c.getParent()+"."+c.getSimpleName());
@@ -106,25 +107,10 @@ public class TestSkeletonGeneratorProcessor extends AbstractProcessor<CtClass<?>
 					//TODO stringManager
 				}
 
-			} catch (NoSuchMethodException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (SecurityException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IllegalAccessException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IllegalArgumentException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (InvocationTargetException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (InstantiationException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+			} catch (Exception e) {
+				System.out.println("Methode fail :"+m.getSignature());
 			}
+			
 			
 		}
 		
@@ -137,48 +123,67 @@ public class TestSkeletonGeneratorProcessor extends AbstractProcessor<CtClass<?>
 		if(hasConstructorWithoutParameter(classe)){
 			String nameObjet = classe.getSimpleName()+valeur++;
 			listeInstruction.add(getFactory().Code().createCodeSnippetStatement(classe.getCanonicalName()+" "+nameObjet+" = new "+classe.getCanonicalName()+"()"));
-			Object retour = executeMethod(classe, methode, tab);
+			StringBuilder parametres = new StringBuilder();
+			Object retour = executeMethod(classe, methode, tab,parametres);
 			if(retour != null){
 				listeInstruction.remove(0);
-				listeInstruction.add(getFactory().Code().createCodeSnippetStatement("junit.framework.Assert.assertEquals("+retour.toString()+","+nameObjet+"."+m.getSimpleName()+"())"));
+				listeInstruction.add(getFactory().Code().createCodeSnippetStatement("junit.framework.Assert.assertEquals("+retour.toString()+","+nameObjet+"."+m.getSimpleName()+"("+parametres.toString()+"))"));
 			}
 		}
 	}
 
-	private Object executeMethod(Class<?> classe, Method methode, Class<?>[] tabParameter) {
+	private Object executeMethod(Class<?> classe, Method methode, Class<?>[] tabParameter, StringBuilder parametres) {
 		try{
 			if(tabParameter.length == 0){
 				return methode.invoke(classe.newInstance(), (Object[])null);
 			}else{
 				Object tab[] = new Object[tabParameter.length];
-				
 				for(int i=0;i<tabParameter.length;i++){
 					Class parametre = tabParameter[i];
 					if(!parametre.isPrimitive()){
 						tab[i] = null;
 					}else{
-						switch (parametre.getName()) {
-						case "int":
-							Integer parametre1 = new Integer(IntValues.ZERO.toString());
-							tab[i] = parametre1;
-							//TODO gérer le paramètre côté génération
-							break;
-
-						default:
-							System.out.println(parametre.getName());
-							tab[i] = null;
-							//TODO tenter d'instancier quand même
-						}
+						generatePrimitiveParameter(parametres, tab, i, parametre);
 
 					}
 					
 				}
-				
 				return methode.invoke(classe.newInstance(), tab);
 			}
 		}catch(Exception e){
-			e.printStackTrace();
+			System.out.println("Methode fail :"+methode.getDeclaringClass().getName()+"."+methode.getName());
 			return null;
+		}
+	}
+
+	private void generatePrimitiveParameter(StringBuilder parametres, Object[] tab, int i, Class parametre) {
+		switch (parametre.getName()) {
+		case "int":
+			Integer parametreInt = new Integer(IntValues.ZERO.toString());
+			tab[i] = parametreInt;
+			manageParameterNumber(parametres, i, parametreInt);
+			break;
+		case "boolean":
+			Boolean parametreBoolean = new Boolean(BooleanValues.TRUE.toString());
+			tab[i] = parametreBoolean;
+			manageParameterNumber(parametres, i, parametreBoolean);
+			break;
+		default:							
+		   tab[i] = null;
+			if(i == 0){
+				parametres.append("null");
+			}else{
+				parametres.append(",null");
+			}						          
+		      
+		}
+	}
+
+	private void manageParameterNumber(StringBuilder parametres, int i, Object parametre) {
+		if(i == 0){
+			parametres.append(parametre.toString());
+		}else{
+			parametres.append(","+parametre.toString());
 		}
 	}
 
