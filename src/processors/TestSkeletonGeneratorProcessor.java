@@ -7,11 +7,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
+import org.joda.time.Hours;
 
 import filter.IntegerMethodFilter;
 import parameters.BooleanValues;
+import parameters.ByteValues;
+import parameters.CharValues;
+import parameters.DoubleValues;
+import parameters.FloatValues;
 import parameters.IntValues;
+import parameters.LongValues;
+import parameters.ShortValues;
 import spoon.processing.AbstractProcessor;
 import spoon.reflect.code.CtBlock;
 import spoon.reflect.code.CtCodeSnippetStatement;
@@ -57,6 +65,8 @@ public class TestSkeletonGeneratorProcessor extends AbstractProcessor<CtClass<?>
 			newClass.addMethod(newMethodBefore);
 
 			List<CtMethod<?>> methodsList =  Query.getElements( c, new IntegerMethodFilter());
+//			methodsList.addAll(Query.)
+			
 			for(CtMethod<?> m : methodsList){
 				if(m.hasModifier(ModifierKind.PUBLIC) && m.getParent().equals(c)){
 					CtMethod<Void> newMethod = newClass.getFactory().Core().createMethod();
@@ -91,7 +101,7 @@ public class TestSkeletonGeneratorProcessor extends AbstractProcessor<CtClass<?>
 
 	private List<CtCodeSnippetStatement> generateMethodResult(Class<?> classe, CtMethod<?> m) {
 		List<CtCodeSnippetStatement> listeInstruction = new ArrayList<>();
-		listeInstruction.add(getFactory().Code().createCodeSnippetStatement("junit.framework.Assert.fail()"));
+		listeInstruction.add(getFactory().Code().createCodeSnippetStatement("org.junit.Assert.fail()"));
 
 		if(classe != null){
 			Integer valeur = 1;
@@ -103,12 +113,12 @@ public class TestSkeletonGeneratorProcessor extends AbstractProcessor<CtClass<?>
 				Method methode = classe.getMethod(m.getSimpleName(), tab);
 				if(m.getType().getActualClass().equals(Integer.class) || m.getType().getActualClass().equals(int.class)){
 					integerManager(classe, m, listeInstruction, valeur, tab, methode);
-				}else if(m.getType().getActualClass().equals(java.lang.String.class)){
-					//TODO stringManager
 				}
 
 			} catch (Exception e) {
 				System.out.println("Methode fail :"+m.getSignature());
+//				if(m.getSignature().equals("org.joda.time.LocalDateTime.testOPL"))
+				System.out.println(e);
 			}
 			
 			
@@ -127,7 +137,7 @@ public class TestSkeletonGeneratorProcessor extends AbstractProcessor<CtClass<?>
 			Object retour = executeMethod(classe, methode, tab,parametres);
 			if(retour != null){
 				listeInstruction.remove(0);
-				listeInstruction.add(getFactory().Code().createCodeSnippetStatement("junit.framework.Assert.assertEquals("+retour.toString()+","+nameObjet+"."+m.getSimpleName()+"("+parametres.toString()+"))"));
+				listeInstruction.add(getFactory().Code().createCodeSnippetStatement("org.junit.Assert.assertEquals("+retour.toString()+","+nameObjet+"."+m.getSimpleName()+"("+parametres.toString()+"))"));
 			}
 		}
 	}
@@ -148,10 +158,13 @@ public class TestSkeletonGeneratorProcessor extends AbstractProcessor<CtClass<?>
 					}
 					
 				}
+				
 				return methode.invoke(classe.newInstance(), tab);
 			}
 		}catch(Exception e){
 			System.out.println("Methode fail :"+methode.getDeclaringClass().getName()+"."+methode.getName());
+			if(methode.getName().equals("testOPL"))
+			System.out.println(e);
 			return null;
 		}
 	}
@@ -167,6 +180,36 @@ public class TestSkeletonGeneratorProcessor extends AbstractProcessor<CtClass<?>
 			Boolean parametreBoolean = new Boolean(BooleanValues.TRUE.toString());
 			tab[i] = parametreBoolean;
 			manageParameterNumber(parametres, i, parametreBoolean);
+			break;
+		case "double":
+			Double parametreDouble = new Double(DoubleValues.ZERO.toString());
+			tab[i] = parametreDouble;
+			manageParameterNumber(parametres, i, parametreDouble);
+			break;
+		case "float":
+			Float parametreFloat = new Float(FloatValues.ZERO.toString());
+			tab[i] = parametreFloat;
+			manageParameterNumber(parametres, i, parametreFloat);
+			break;
+		case "long":
+			Long parametreLong = new Long(LongValues.ZERO.toString());
+			tab[i] = parametreLong;
+			manageParameterNumber(parametres, i, parametreLong);
+			break;
+		case "char":
+			Character parametreChar = new Character(CharValues.ZERO.toString().charAt(0));	
+			tab[i] = parametreChar;
+			manageParameterNumber(parametres, i, parametreChar);
+			break;
+		case "byte":
+			Byte parametreByte = new Byte(ByteValues.ZERO.toString());
+			tab[i] = parametreByte;
+			manageParameterNumber(parametres, i, parametreByte);
+			break;
+		case "short":
+			Short parametreShort = new Short(ShortValues.ZERO.toString());
+			tab[i] = parametreShort;
+			manageParameterNumber(parametres, i, parametreShort);
 			break;
 		default:							
 		   tab[i] = null;
