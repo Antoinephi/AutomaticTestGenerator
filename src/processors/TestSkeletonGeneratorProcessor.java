@@ -12,6 +12,7 @@ import org.joda.time.DateTimeUtils;
 import org.joda.time.Hours;
 
 import filter.IntegerMethodFilter;
+import filter.ObjectMethodFilter;
 import parameters.BooleanValues;
 import parameters.ByteValues;
 import parameters.CharValues;
@@ -65,7 +66,7 @@ public class TestSkeletonGeneratorProcessor extends AbstractProcessor<CtClass<?>
 			newClass.addMethod(newMethodBefore);
 
 			List<CtMethod<?>> methodsList =  Query.getElements( c, new IntegerMethodFilter());
-//			methodsList.addAll(Query.)
+			methodsList.addAll(Query.getElements(c, new ObjectMethodFilter()));
 			
 			for(CtMethod<?> m : methodsList){
 				if(m.hasModifier(ModifierKind.PUBLIC) && m.getParent().equals(c)){
@@ -113,18 +114,32 @@ public class TestSkeletonGeneratorProcessor extends AbstractProcessor<CtClass<?>
 				Method methode = classe.getMethod(m.getSimpleName(), tab);
 				if(m.getType().getActualClass().equals(Integer.class) || m.getType().getActualClass().equals(int.class)){
 					integerManager(classe, m, listeInstruction, valeur, tab, methode);
+				}else if(!m.getType().isPrimitive()){
+					objectManager(classe, m , listeInstruction, valeur, tab, methode);
 				}
 
 			} catch (Exception e) {
 				System.out.println("Methode fail :"+m.getSignature());
-//				if(m.getSignature().equals("org.joda.time.LocalDateTime.testOPL"))
-				System.out.println(e);
 			}
 			
 			
 		}
 		
 		return listeInstruction;
+	}
+
+	private void objectManager(Class<?> classe, CtMethod<?> m, List<CtCodeSnippetStatement> listeInstruction,
+			Integer valeur, Class<?>[] tab, Method methode) {
+		if(hasConstructorWithoutParameter(classe)){
+			String nameObjet = classe.getSimpleName()+valeur++;
+			listeInstruction.add(getFactory().Code().createCodeSnippetStatement(classe.getCanonicalName()+" "+nameObjet+" = new "+classe.getCanonicalName()+"()"));
+			StringBuilder parametres = new StringBuilder();
+			Object retour = executeMethod(classe, methode, tab,parametres);
+			if(retour != null){
+				listeInstruction.remove(0);
+				listeInstruction.add(getFactory().Code().createCodeSnippetStatement("org.junit.Assert.assertEquals("+retour.hashCode()+","+nameObjet+"."+m.getSimpleName()+"("+parametres.toString()+").hashCode())"));			
+			}
+		}		
 	}
 
 	private void integerManager(Class<?> classe, CtMethod<?> m, List<CtCodeSnippetStatement> listeInstruction,
@@ -197,9 +212,14 @@ public class TestSkeletonGeneratorProcessor extends AbstractProcessor<CtClass<?>
 			manageParameterNumber(parametres, i, parametreLong);
 			break;
 		case "char":
-			Character parametreChar = new Character(CharValues.ZERO.toString().charAt(0));	
+			Character parametreChar = new Character('A');	
 			tab[i] = parametreChar;
-			manageParameterNumber(parametres, i, parametreChar);
+			
+			if(i == 0){
+				parametres.append("'"+parametreChar.toString()+"'");
+			}else{
+				parametres.append(",'"+parametreChar.toString()+"'");
+			}
 			break;
 		case "byte":
 			Byte parametreByte = new Byte(ByteValues.ZERO.toString());
